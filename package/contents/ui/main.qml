@@ -6,6 +6,7 @@
  */
 
 import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 import org.kde.kirigami as Kirigami
@@ -30,7 +31,7 @@ PlasmoidItem {
     readonly property bool showRestart: Plasmoid.configuration.showRestart
     readonly property bool showShutdown: Plasmoid.configuration.showShutdown
     readonly property bool showSuspend: Plasmoid.configuration.showSuspend
-    readonly property bool showHybernate: Plasmoid.configuration.showHybernate
+    readonly property bool showHibernate: Plasmoid.configuration.showHibernate
     readonly property bool showNewSession: Plasmoid.configuration.showNewSession
     readonly property bool showUsers: Plasmoid.configuration.showUsers
     readonly property bool showText: Plasmoid.configuration.showText
@@ -83,7 +84,7 @@ PlasmoidItem {
 
             Kirigami.Icon {
                 id: shutdownIcon
-                source: "system-shutdown"
+                source: "system-shutdown-symbolic-custom"
                 anchors.verticalCenter: parent.verticalCenter
                 height: compactRoot.height - Math.round(Kirigami.Units.smallSpacing / 2)
                 width: height
@@ -106,19 +107,20 @@ PlasmoidItem {
             }
         }
     }
-
+        
     fullRepresentation: Item {
         id: fullRoot
 
-        implicitHeight: column.implicitHeight
         implicitWidth: column.implicitWidth
+        implicitHeight: column.implicitHeight
 
         Layout.preferredWidth: showText ? Kirigami.Units.gridUnit * 12 : Kirigami.Units.iconSizes.smallMedium * 1.6
         Layout.preferredHeight: implicitHeight
+        
         Layout.minimumWidth: Layout.preferredWidth
         Layout.minimumHeight: Layout.preferredHeight
         Layout.maximumWidth: Layout.preferredWidth
-        Layout.maximumHeight: Screen.height / 2
+        Layout.maximumHeight: Layout.preferredHeight
 
         Sessions.SessionManagement {
             id: sm
@@ -143,120 +145,204 @@ PlasmoidItem {
                 visible: showUsers
             }
 
-            PlasmaComponents.ScrollView {
-                id: scroll
+            // PlasmaComponents.ScrollView {
+            //     id: scroll
 
+            //     Layout.fillWidth: true
+            //     Layout.fillHeight: true
+
+            //     // HACK: workaround for https://bugreports.qt.io/browse/QTBUG-83890
+            //     PlasmaComponents.ScrollBar.horizontal.policy: PlasmaComponents.ScrollBar.AlwaysOff
+
+            //     ListView {
+                    
+            //         id: userList
+            //         model: sessionsModel
+
+            //         interactive: true
+            //         keyNavigationWraps: false
+
+            //         delegate: UserListDelegate {
+            //             width: ListView.view.width
+
+            //             activeFocusOnTab: true
+
+            //             text: {
+            //                 if (!model.session) {
+            //                     return i18nc("Nobody logged in on that session", "Unused")
+            //                 }
+
+            //                 if (model.realName && root.showFullName) {
+            //                     return model.realName
+            //                 }
+
+            //                 return model.name
+            //             }
+            //             source: model.icon
+
+            //             KeyNavigation.up: index === 0 ? currentUserItem.nextItemInFocusChain() : userList.itemAtIndex(index - 1)
+            //             KeyNavigation.down: index === userList.count - 1 ? newSessionButton : userList.itemAtIndex(index + 1)
+
+            //             Accessible.description: i18nc("@action:button", "Switch to User %1", text)
+
+            //             onClicked: sessionsModel.switchUser(model.vtNumber, sessionsModel.shouldLock)
+            //         }
+            //     }
+
+            // }
+
+
+            ListView {
+                id: controlsList
+
+                implicitHeight: contentItem.height
                 Layout.fillWidth: true
-                Layout.fillHeight: true
 
-                // HACK: workaround for https://bugreports.qt.io/browse/QTBUG-83890
-                PlasmaComponents.ScrollBar.horizontal.policy: PlasmaComponents.ScrollBar.AlwaysOff
+                keyNavigationWraps: false
+                highlight: Rectangle { color: "#6193ab"; radius: 5; opacity: 0.5 }
 
-                ListView {
-                    id: userList
-                    model: sessionsModel
-
-                    focus: true
-                    interactive: true
-                    keyNavigationWraps: true
-
-                    delegate: UserListDelegate {
-                        width: ListView.view.width
-
-                        activeFocusOnTab: true
-
-                        text: {
-                            if (!model.session) {
-                                return i18nc("Nobody logged in on that session", "Unused")
-                            }
-
-                            if (model.realName && root.showFullName) {
-                                return model.realName
-                            }
-
-                            return model.name
-                        }
-                        source: model.icon
-
-                        KeyNavigation.up: index === 0 ? currentUserItem.nextItemInFocusChain() : userList.itemAtIndex(index - 1)
-                        KeyNavigation.down: index === userList.count - 1 ? newSessionButton : userList.itemAtIndex(index + 1)
-
-                        Accessible.description: i18nc("@action:button", "Switch to User %1", text)
-
-                        onClicked: sessionsModel.switchUser(model.vtNumber, sessionsModel.shouldLock)
+                model: ListModel {
+                    Component.onCompleted: {
+                        sessionsModel.canStartNewSession && showNewSession ? append({
+                            "text": "New session",
+                            "iconName": "system-switch-user",
+                            "action": "switch-user",
+                        }) : null;
+                        sm.canLock && showLockScreen ? append({
+                            "text": "Lock screen",
+                            "iconName": "system-lock-screen",
+                            "action": "lock",
+                            "confirm": true,
+                        }) : null;
+                        sm.canLogout && showLogOut ? append({
+                            "text": "Log out",
+                            "iconName": "system-log-out",
+                            "action": "logout",
+                            "confirm": true,
+                        }) : null;
+                        sm.canReboot && showRestart ? append({
+                            "text": "Reboot",
+                            "iconName": "system-reboot",
+                            "action": "reboot",
+                            "confirm": true,
+                        }) : null;
+                        sm.canSuspend && showSuspend ? append({
+                            "text": "Suspend",
+                            "iconName": "system-suspend",
+                            "action": "suspend",
+                        }) : null;
+                        sm.canSuspendThenHibernate && showHibernate ? append({
+                            "text": "Hibernate",
+                            "iconName": "system-suspend-hibernate",
+                            "action": "hibernate",
+                            "confirm": true,
+                        }) : null;
+                        sm.canShutdown && showShutdown ? append({
+                            "text": "Shutdown",
+                            "iconName": "system-shutdown",
+                            "action": "shutdown",
+                            "confirm": true,
+                        }) : null;
                     }
                 }
-            }
 
-            ActionListDelegate {
-                id: newSessionButton
-                text: showText ? i18nc("@action", "New Session") : ""
-                icon.name: "system-switch-user"
-                visible: sessionsModel.canStartNewSession && showNewSession
-                KeyNavigation.up: userList.count > 0 ? userList.itemAtIndex(userList.count - 1) : currentUserItem.nextItemInFocusChain()
-                KeyNavigation.down: lockScreenButton
-                onClicked: sessionsModel.startNewSession(sessionsModel.shouldLock)
-            }
+                property var actionMap: {
+                    "switch-user": () => sessionsModel.startNewSession(sessionsModel.shouldLock),
+                    "lock": () => sm.lock(),
+                    "logout": () => sm.logout(),
+                    "reboot": () => sm.requestReboot(0),
+                    "suspend": () => sm.suspend(),
+                    "hibernate": () => sm.suspendThenHibernate(),
+                    "shutdown": () => sm.requestShutdown(0),
+                }
 
-            ActionListDelegate {
-                id: lockScreenButton
-                text: showText ? i18nc("@action", "Lock Screen") : ""
-                icon.name: "system-lock-screen"
-                visible: sm.canLock && showLockScreen
-                KeyNavigation.up: newSessionButton
-                KeyNavigation.down: leaveButton
-                onClicked: sm.lock()
-            }
+                delegate: ActionListDelegate {
+                    width: ListView.view.width
 
-            ActionListDelegate {
-                id: leaveButton
-                text: showText ? i18nc("@action", "Log Out") : ""
-                icon.name: "system-log-out"
-                visible: sm.canLogout && showLogOut
-                KeyNavigation.up: lockScreenButton
-                onClicked: sm.requestLogout(0) // do not show the Leave screen
-            }
+                    text: model.text
+                    icon.name: model.iconName
 
-            ActionListDelegate {
-                id: rebootButton
-                text: showText ? i18nc("@action", "Reboot...") : ""
-                icon.name: "system-reboot"
-                visible: sm.canReboot && showRestart
-                onClicked: sm.requestReboot(0) // do not show the Leave screen
-            }
+                    function handleAction() {
+                        model.confirm ? confirmDialog.open() : controlsList.actionMap[model.action]()
+                    }
+                    
+                    Keys.onReturnPressed: {
+                        handleAction()
+                    }
+            
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: handleAction()
+                    }
 
-            ActionListDelegate {
-                id: shutdownButton
-                text: showText ? i18nc("@action", "Shutdown") : ""
-                icon.name: "system-shutdown"
-                visible: sm.canShutdown && showShutdown
-                onClicked: sm.requestShutdown(0) // do not show the Leave screen
-            }
+                    Dialog {
+                        id: confirmDialog
+                        modal: true
+                        
+                        anchors.centerIn: Overlay.overlay
+                        implicitWidth: parent.width
 
-            ActionListDelegate {
-                id: suspendButton
-                text: showText ? i18nc("@action", "Suspend") : ""
-                icon.name: "system-suspend"
-                visible: sm.canSuspend && showSuspend
-                onClicked: sm.suspend()
-            }
+                        title: "Confirm action"
 
-            ActionListDelegate {
-                id: hybernateButton
-                text: showText ? i18nc("@action", "Hybernate") : ""
-                icon.name: "system-suspend-hibernate"
-                visible: sm.canSuspendThenHibernate && showHybernate
-                onClicked: sm.suspendThenHibernate()
+                        footer: DialogButtonBox {
+                            alignment: Qt.AlignHCenter
+
+                            Button {
+                                id: okButton
+                                text: qsTr("OK")
+                                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                                Keys.onReturnPressed: {
+                                    confirmDialog.accept()
+                                }
+                            }
+                            Button {
+                                id: cancelButton
+                                text: qsTr("Cancel")
+                                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+                                Keys.onReturnPressed: {
+                                    confirmDialog.reject()
+                                }
+                            }
+                        }
+
+                        contentItem: Item {
+                            ColumnLayout {
+                                Label {
+                                    text: "%1?".arg(model.text)
+                                }
+                            }
+                        }
+
+                        onAccepted: controlsList.actionMap[model.action]()
+                        onRejected: controlsList.forceActiveFocus()
+     
+                        onOpened: {
+                            okButton.forceActiveFocus()
+                            okButton.focusReason = Qt.TabFocusReason
+                        }
+                    }
+                }
+            
+                Component.onCompleted: {
+                    fullRoot.activated.connect(function() {
+                        controlsList.forceActiveFocus()
+                    })
+                }
+
             }
         }
+
+        signal activated()
 
         Connections {
             target: root
             function onExpandedChanged() {
                 if (root.expanded) {
+                    fullRoot.activated()
                     sessionsModel.reload();
                 }
             }
         }
+
     }
 }
