@@ -191,14 +191,13 @@ PlasmoidItem {
 
             // }
 
-
             ListView {
                 id: controlsList
 
                 implicitHeight: contentItem.height
                 Layout.fillWidth: true
 
-                keyNavigationWraps: false
+                keyNavigationWraps: true
                 highlight: Rectangle { color: "#6193ab"; radius: 5; opacity: 0.5 }
 
                 model: ListModel {
@@ -212,7 +211,6 @@ PlasmoidItem {
                             "text": "Lock screen",
                             "iconName": "system-lock-screen",
                             "action": "lock",
-                            "confirm": true,
                         }) : null;
                         sm.canLogout && showLogOut ? append({
                             "text": "Log out",
@@ -290,6 +288,7 @@ PlasmoidItem {
                             Button {
                                 id: okButton
                                 text: qsTr("OK")
+                                focus: true
                                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
                                 Keys.onReturnPressed: {
                                     confirmDialog.accept()
@@ -316,7 +315,7 @@ PlasmoidItem {
                         onAccepted: controlsList.actionMap[model.action]()
                         onRejected: controlsList.forceActiveFocus()
      
-                        onOpened: {
+                        onAboutToShow: {
                             okButton.forceActiveFocus()
                             okButton.focusReason = Qt.TabFocusReason
                         }
@@ -325,7 +324,12 @@ PlasmoidItem {
             
                 Component.onCompleted: {
                     fullRoot.activated.connect(function() {
+                        controlsList.highlightMoveVelocity = 10000
+                        controlsList.highlightResizeVelocity = 10000
+                        controlsList.currentIndex = controlsList.count - 1
                         controlsList.forceActiveFocus()
+                        controlsList.forceLayout()
+                        controlsList.highlightMoveVelocity = 800
                     })
                 }
 
