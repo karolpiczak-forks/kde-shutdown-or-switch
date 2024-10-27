@@ -247,7 +247,7 @@ PlasmoidItem {
                 property var actionMap: {
                     "switch-user": () => sessionsModel.startNewSession(sessionsModel.shouldLock),
                     "lock": () => sm.lock(),
-                    "logout": () => sm.logout(),
+                    "logout": () => sm.requestLogout(0),
                     "reboot": () => sm.requestReboot(0),
                     "suspend": () => sm.suspend(),
                     "hibernate": () => sm.suspendThenHibernate(),
